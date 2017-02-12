@@ -1,0 +1,73 @@
+#!/usr/bin/env python
+from doc2vec import doc2vec
+import logging
+from gensim.models import Doc2Vec
+import gensim
+from clean_doc import clean_doc
+import json
+from util import listify
+from argparse import ArgumentParser
+
+logger = logging.getLogger("Doc2vec Semantic Relation")
+
+@listify
+def create_corpus(corpus,stop_words,lemmatize):
+
+	with open(corpus) as data_file:
+		data = json.load(data_file)
+		for index , line in enumerate(data):
+
+			# Print a status message every 1000th news-feed
+		       	if index%1000. == 0.:
+			  	print "news %d of %d" % (index, len(data))
+
+			raw_data = line['boilerhtml']
+			url      = line['url'].lower()	
+			clean_data = clean_doc(raw_data,stop_words=stop_words,lemmatize=lemmatize)
+			yield url , clean_data
+
+if __name__ == "__main__":
+
+	parser = ArgumentParser(description=('Build a Document-vector-space model from the provided corpus'))
+
+	parser.add_argument('corpus', metavar='corpus_path')
+
+    	parser.add_argument('--stop_words', type=bool, default=False,
+                         help='Clean Stop-words from corpus')
+
+	parser.add_argument('--lemmatize', type=bool, default=False,
+                         help='Allow Lemmatization in Corpus')
+
+
+	parser.add_argument('--min_count', type=int, default=1,
+                           help=('Discard words which occurr fewer'
+                                 'than this many times in the training '
+                                 'corpus'))
+
+    	parser.add_argument('-w', '--window_size', type=int, default=10,
+                           help=('Number of context words to track to '
+                                 'left and right of each word'))
+
+    	parser.add_argument('--epoch', type=int, default=25,
+                         help='Number of training iterations')
+
+	parser.add_argument('--alpha', type=float, default=0.025,
+                         help='Initial learning rate')
+
+	parser.add_argument('--min_alpha', type=float, default=0.025,
+                         help='Initial learning rate')
+
+    	parser.add_argument('--model_path',
+                         help=('Path to which to save trained doc2vec'
+                               'model'))
+
+	args = parser.parse_args()
+	corpus = args.corpus
+    	logger.info("Fetching Data from Given Data File..")
+	
+	#Prepare Training Data-set
+	data = create_corpus(corpus,args.stop_words,args.lemmatize)
+
+
+	logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+	doc2vec(data,args.alpha,args.window_size,args.min_alpha,args.min_count,args.epoch,args.model_path)#Train And Save model

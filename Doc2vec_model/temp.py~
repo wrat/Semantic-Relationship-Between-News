@@ -1,0 +1,66 @@
+from doc2vec import doc2vec
+import logging
+from gensim.models import Doc2Vec
+import gensim
+from clean_doc import clean_doc
+import json
+from util import listify
+
+def get_or_build(path, build_fn, *args, **kwargs):
+
+    """
+    Load from serialized form or build an object, saving the built
+    object.
+
+    Remaining arguments are provided to `build_fn`.
+    """
+
+    save = False
+    obj = None
+
+    if path is not None and os.path.isfile(path):
+        with open(path, 'rb') as obj_f:
+            obj = msgpack.load(obj_f, use_list=False, encoding='utf-8')
+    else:
+        save = True
+
+    if obj is None:
+        obj = build_fn(*args, **kwargs)
+
+        if save and path is not None:
+            with open(path, 'wb') as obj_f:
+                msgpack.dump(obj, obj_f)
+
+    return obj
+
+@listify
+def create_corpus(data):
+	
+	for index , line in enumerate(data):
+
+		# Print a status message every 1000th news-feed
+		 if index%1000. == 0.:
+			print "news %d of %d" % (index, len(data))
+
+		raw_data = line['boilerhtml']
+		url      = line['url']	
+		clean_data = clean_doc(raw_data,lemmatize = 1)
+		yield url , clean_data
+
+
+path = 'data.pickle'
+
+with open('Semantics2.json') as data_file:
+data = json.load(data_file)
+
+data = get_or_build(path, create_corpus)
+
+
+#logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+#doc2vec(data)#Train And Save model
+
+"""
+#load the model back
+model = Doc2Vec.load('my_model.doc2vec')
+"""
+
